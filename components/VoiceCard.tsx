@@ -9,14 +9,18 @@ interface Props {
   initialCount: number;
 }
 
-const PROVIDER_STYLES: Record<Voice["provider"], string> = {
-  cartesia: "bg-emerald-50 border-emerald-200 text-emerald-900",
-  elevenlabs: "bg-indigo-50 border-indigo-200 text-indigo-900",
+const ACCENT: Record<Voice["provider"], string> = {
+  cartesia:
+    "bg-cyan-500/5 border-cyan-500/20 hover:border-cyan-400/40 shadow-[0_0_0_1px_rgba(34,211,238,0.05)_inset]",
+  elevenlabs:
+    "bg-violet-500/5 border-violet-500/20 hover:border-violet-400/40 shadow-[0_0_0_1px_rgba(167,139,250,0.05)_inset]",
 };
 
-const PROVIDER_LABEL: Record<Voice["provider"], string> = {
-  cartesia: "Cartesia",
-  elevenlabs: "ElevenLabs",
+const BTN_ACCENT: Record<Voice["provider"], string> = {
+  cartesia:
+    "text-cyan-300 hover:text-cyan-200 hover:bg-cyan-400/10 active:bg-cyan-400/20",
+  elevenlabs:
+    "text-violet-300 hover:text-violet-200 hover:bg-violet-400/10 active:bg-violet-400/20",
 };
 
 export function VoiceCard({ voice, initialCount }: Props) {
@@ -46,39 +50,36 @@ export function VoiceCard({ voice, initialCount }: Props) {
 
   return (
     <div
-      className={`rounded-lg border p-3 flex items-center justify-between gap-3 ${PROVIDER_STYLES[voice.provider]}`}
+      className={`flex items-center justify-center gap-2 rounded-lg border px-2.5 py-2 transition-colors ${ACCENT[voice.provider]}`}
     >
-      <div className="flex flex-col">
-        <span className="text-xs uppercase tracking-wider opacity-70">
-          {PROVIDER_LABEL[voice.provider]} · {voice.variant}
-        </span>
-        <span className="text-sm font-mono opacity-60 truncate max-w-[18rem]">
-          {voice.providerVoiceId}
-        </span>
-        {error && (
-          <span className="text-xs text-red-600 mt-1">{error}</span>
+      <button
+        type="button"
+        onClick={() => play(voice.id, SAMPLE_TEXT)}
+        disabled={loading}
+        aria-label="Play sample"
+        title={error ?? "Play sample"}
+        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] disabled:opacity-50 ${BTN_ACCENT[voice.provider]}`}
+      >
+        {loading ? (
+          <span className="block h-3 w-3 animate-pulse rounded-full bg-current" />
+        ) : (
+          <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5">
+            <path d="M8 5.14v13.72L19 12 8 5.14Z" />
+          </svg>
         )}
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => play(voice.id, SAMPLE_TEXT)}
-          disabled={loading}
-          className="rounded-md bg-white border border-current/20 px-3 py-1.5 text-sm font-medium hover:bg-black/5 disabled:opacity-50"
-          aria-label="Play sample"
-        >
-          {loading ? "…" : "▶ Play"}
-        </button>
-        <button
-          type="button"
-          onClick={handleVote}
-          disabled={voting}
-          className="rounded-md bg-white border border-current/20 px-3 py-1.5 text-sm font-medium hover:bg-black/5 disabled:opacity-50 min-w-[4.5rem]"
-          aria-label="Upvote"
-        >
-          ▲ {count}
-        </button>
-      </div>
+      </button>
+      <button
+        type="button"
+        onClick={handleVote}
+        disabled={voting}
+        aria-label="Upvote"
+        className={`inline-flex h-8 min-w-[3.5rem] items-center justify-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-2 text-xs font-semibold tabular-nums disabled:opacity-60 ${BTN_ACCENT[voice.provider]}`}
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor" className="h-3 w-3">
+          <path d="M12 4l8 10H4l8-10Z" />
+        </svg>
+        {count}
+      </button>
     </div>
   );
 }

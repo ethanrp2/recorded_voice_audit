@@ -17,6 +17,11 @@ interface Props {
   votes: Record<string, number>;
 }
 
+const CARTESIA_COLOR = "#22d3ee";
+const ELEVENLABS_COLOR = "#a78bfa";
+const REGULAR_COLOR = "#f472b6";
+const CX_COLOR = "#facc15";
+
 export function SummaryCharts({ voices, votes }: Props) {
   const providerTotals: Record<Voice["provider"], number> = {
     cartesia: 0,
@@ -25,8 +30,12 @@ export function SummaryCharts({ voices, votes }: Props) {
   for (const v of voices) providerTotals[v.provider] += votes[v.id] ?? 0;
 
   const providerData = [
-    { name: "Cartesia", total: providerTotals.cartesia, fill: "#10b981" },
-    { name: "ElevenLabs", total: providerTotals.elevenlabs, fill: "#6366f1" },
+    { name: "Cartesia", total: providerTotals.cartesia, fill: CARTESIA_COLOR },
+    {
+      name: "ElevenLabs",
+      total: providerTotals.elevenlabs,
+      fill: ELEVENLABS_COLOR,
+    },
   ];
 
   const byPerson = new Map<string, Voice[]>();
@@ -50,15 +59,15 @@ export function SummaryCharts({ voices, votes }: Props) {
   }
 
   const variantData = [
-    { name: "Regular", total: regularMaxSum, fill: "#f59e0b" },
-    { name: "CX", total: cxMaxSum, fill: "#ef4444" },
+    { name: "Regular", total: regularMaxSum, fill: REGULAR_COLOR },
+    { name: "CX", total: cxMaxSum, fill: CX_COLOR },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <ChartCard
         title="Upvotes by provider"
-        subtitle="Total upvotes across every voice"
+        subtitle="Total across every voice"
         data={providerData}
       />
       <ChartCard
@@ -80,20 +89,44 @@ function ChartCard({
   data: { name: string; total: number; fill: string }[];
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h3 className="text-base font-semibold text-gray-900">{title}</h3>
-      <p className="text-sm text-gray-500 mb-3">{subtitle}</p>
-      <div className="h-52 w-full">
+    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 backdrop-blur-sm">
+      <h3 className="font-mono text-xs uppercase tracking-[0.2em] text-slate-300">
+        {title}
+      </h3>
+      <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>
+      <div className="mt-3 h-40 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
-            <YAxis stroke="#6b7280" fontSize={12} allowDecimals={false} />
-            <Tooltip
-              cursor={{ fill: "rgba(0,0,0,0.04)" }}
-              contentStyle={{ borderRadius: 8, border: "1px solid #e5e7eb" }}
+          <BarChart
+            data={data}
+            margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+          >
+            <CartesianGrid strokeDasharray="2 4" stroke="#ffffff14" />
+            <XAxis
+              dataKey="name"
+              stroke="#64748b"
+              fontSize={11}
+              tickLine={false}
+              axisLine={{ stroke: "#ffffff14" }}
             />
-            <Bar dataKey="total" radius={[6, 6, 0, 0]}>
+            <YAxis
+              stroke="#64748b"
+              fontSize={11}
+              allowDecimals={false}
+              tickLine={false}
+              axisLine={{ stroke: "#ffffff14" }}
+            />
+            <Tooltip
+              cursor={{ fill: "rgba(255,255,255,0.04)" }}
+              contentStyle={{
+                borderRadius: 8,
+                border: "1px solid rgba(255,255,255,0.1)",
+                background: "rgba(10, 10, 18, 0.95)",
+                color: "#e2e8f0",
+                fontSize: 12,
+              }}
+              labelStyle={{ color: "#94a3b8" }}
+            />
+            <Bar dataKey="total" radius={[4, 4, 0, 0]}>
               {data.map((d) => (
                 <Cell key={d.name} fill={d.fill} />
               ))}

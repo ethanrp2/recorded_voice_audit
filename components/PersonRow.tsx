@@ -20,11 +20,14 @@ function pick(
 export function PersonRow({ person, voices }: Props) {
   const { votes } = useVotes();
   const maxCount = voices.reduce((m, v) => Math.max(m, votes[v.id] ?? 0), 0);
+  const leadersAtMax = voices.filter((v) => (votes[v.id] ?? 0) === maxCount)
+    .length;
+  const hasUniqueLeader = maxCount > 0 && leadersAtMax === 1;
   const isHighlighted = (v: Voice | undefined): boolean => {
     if (!v) return false;
-    const c = votes[v.id] ?? 0;
     if (maxCount === 0) return true;
-    return c === maxCount;
+    if (!hasUniqueLeader) return false;
+    return (votes[v.id] ?? 0) === maxCount;
   };
 
   return (

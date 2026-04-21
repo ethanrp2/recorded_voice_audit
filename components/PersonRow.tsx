@@ -18,12 +18,13 @@ function pick(
 }
 
 export function PersonRow({ person, voices }: Props) {
-  const { userVotes } = useVotes();
-  const userPick = userVotes[person];
+  const { userPicks, hasPickFor } = useVotes();
+  const chosenId = userPicks[person];
+  const anyPick = hasPickFor(person);
   const isHighlighted = (v: Voice | undefined): boolean => {
     if (!v) return false;
-    if (!userPick) return true;
-    return v.id === userPick;
+    if (!anyPick) return true;
+    return v.id === chosenId;
   };
 
   return (

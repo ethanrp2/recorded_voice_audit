@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "clear-votes": "tsx scripts/clear-votes.ts"
+    "clear-votes": "tsx scripts/clear-votes.ts",
+    "seed-chosen": "tsx scripts/seed-chosen.ts"
   },
   "dependencies": {
     "@upstash/redis": "^1.37.0",

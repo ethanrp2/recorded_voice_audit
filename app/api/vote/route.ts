@@ -11,7 +11,6 @@ export async function POST(request: Request) {
 
   const voiceId = body?.voiceId;
   const delta = body?.delta === -1 ? -1 : 1;
-
   if (!voiceId) {
     return Response.json({ error: "Missing voiceId" }, { status: 400 });
   }

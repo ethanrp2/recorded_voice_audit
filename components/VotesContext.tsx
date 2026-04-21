@@ -10,38 +10,41 @@ import {
 } from "react";
 import type { Voice } from "@/lib/voices";
 
-const USER_VOTES_KEY = "rva:userVotes";
-
-type UserVotes = Record<string, string>;
+const USER_PICKS_KEY = "rva:userPicks";
 
 interface VotesContextValue {
   votes: Record<string, number>;
-  userVotes: UserVotes;
+  userPicks: Record<string, string>;
   vote: (voice: Voice) => Promise<void>;
-  isVotedByUser: (voice: Voice) => boolean;
+  isChosen: (voice: Voice) => boolean;
+  hasPickFor: (person: string) => boolean;
+  countFor: (voice: Voice) => number;
 }
 
 const VotesContext = createContext<VotesContextValue | null>(null);
 
-function loadUserVotes(): UserVotes {
+function loadUserPicks(): Record<string, string> {
   if (typeof window === "undefined") return {};
   try {
-    const raw = window.localStorage.getItem(USER_VOTES_KEY);
-    return raw ? (JSON.parse(raw) as UserVotes) : {};
+    const raw = window.localStorage.getItem(USER_PICKS_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, string>) : {};
   } catch {
     return {};
   }
 }
 
-function saveUserVotes(value: UserVotes) {
+function saveUserPicks(value: Record<string, string>) {
   try {
-    window.localStorage.setItem(USER_VOTES_KEY, JSON.stringify(value));
+    window.localStorage.setItem(USER_PICKS_KEY, JSON.stringify(value));
   } catch {
     /* ignore */
   }
 }
 
-async function postVote(voiceId: string, delta: 1 | -1): Promise<number | null> {
+async function postVote(
+  voiceId: string,
+  delta: 1 | -1
+): Promise<number | null> {
   try {
     const resp = await fetch("/api/vote", {
       method: "POST",
@@ -64,25 +67,22 @@ export function VotesProvider({
   children: ReactNode;
 }) {
   const [votes, setVotes] = useState<Record<string, number>>(initialVotes);
-  const [userVotes, setUserVotes] = useState<UserVotes>({});
+  const [userPicks, setUserPicks] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    setUserVotes(loadUserVotes());
+    setUserPicks(loadUserPicks());
   }, []);
 
   const vote = useCallback(
     async (voice: Voice) => {
-      const prevVoiceId = userVotes[voice.person];
+      const prevVoiceId = userPicks[voice.person];
       const unvoting = prevVoiceId === voice.id;
 
-      const nextUserVotes: UserVotes = { ...userVotes };
-      if (unvoting) {
-        delete nextUserVotes[voice.person];
-      } else {
-        nextUserVotes[voice.person] = voice.id;
-      }
-      setUserVotes(nextUserVotes);
-      saveUserVotes(nextUserVotes);
+      const nextPicks = { ...userPicks };
+      if (unvoting) delete nextPicks[voice.person];
+      else nextPicks[voice.person] = voice.id;
+      setUserPicks(nextPicks);
+      saveUserPicks(nextPicks);
 
       setVotes((curr) => {
         const next = { ...curr };
@@ -95,28 +95,44 @@ export function VotesProvider({
         return next;
       });
 
-      const decremented = prevVoiceId
+      const decrementedCount = prevVoiceId
         ? await postVote(prevVoiceId, -1)
         : null;
-      const incremented = unvoting ? null : await postVote(voice.id, 1);
+      const incrementedCount = unvoting ? null : await postVote(voice.id, 1);
 
       setVotes((curr) => {
         const next = { ...curr };
-        if (prevVoiceId && decremented != null) next[prevVoiceId] = decremented;
-        if (!unvoting && incremented != null) next[voice.id] = incremented;
+        if (prevVoiceId && decrementedCount != null) {
+          next[prevVoiceId] = decrementedCount;
+        }
+        if (!unvoting && incrementedCount != null) {
+          next[voice.id] = incrementedCount;
+        }
         return next;
       });
     },
-    [userVotes]
+    [userPicks]
   );
 
-  const isVotedByUser = useCallback(
-    (voice: Voice) => userVotes[voice.person] === voice.id,
-    [userVotes]
+  const isChosen = useCallback(
+    (voice: Voice) => userPicks[voice.person] === voice.id,
+    [userPicks]
+  );
+
+  const hasPickFor = useCallback(
+    (person: string) => Boolean(userPicks[person]),
+    [userPicks]
+  );
+
+  const countFor = useCallback(
+    (voice: Voice) => votes[voice.id] ?? 0,
+    [votes]
   );
 
   return (
-    <VotesContext.Provider value={{ votes, userVotes, vote, isVotedByUser }}>
+    <VotesContext.Provider
+      value={{ votes, userPicks, vote, isChosen, hasPickFor, countFor }}
+    >
       {children}
     </VotesContext.Provider>
   );

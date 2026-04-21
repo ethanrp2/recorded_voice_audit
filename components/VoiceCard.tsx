@@ -54,9 +54,10 @@ const PALETTE: Record<
 export function VoiceCard({ voice, highlighted }: Props) {
   const { play, loadingVoiceId, playingVoiceId, error } = useAudio();
   const { phrase } = usePhrase();
-  const { vote, isVotedByUser } = useVotes();
+  const { vote, isChosen, countFor } = useVotes();
   const p = PALETTE[voice.provider];
-  const voted = isVotedByUser(voice);
+  const voted = isChosen(voice);
+  const count = countFor(voice);
   const isLoading = loadingVoiceId === voice.id;
   const isPlaying = playingVoiceId === voice.id;
 
@@ -92,9 +93,9 @@ export function VoiceCard({ voice, highlighted }: Props) {
       <button
         type="button"
         onClick={() => vote(voice)}
-        aria-label={voted ? "Remove your vote" : "Vote for this voice"}
+        aria-label={voted ? "Remove vote" : "Vote for this voice"}
         aria-pressed={voted}
-        title={voted ? "Click to remove your vote" : "Vote for this voice"}
+        title={voted ? "Click to remove this vote" : "Vote for this voice"}
         className={`inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md border px-2.5 text-xs font-semibold transition-colors ${
           voted
             ? `border-transparent ${p.activeBg} text-white ${p.activeHover}`
@@ -105,6 +106,7 @@ export function VoiceCard({ voice, highlighted }: Props) {
           <path d="M12 4l8 10H4l8-10Z" />
         </svg>
         <span>{voted ? "Voted" : "Vote"}</span>
+        <span className="tabular-nums opacity-70">· {count}</span>
       </button>
     </div>
   );

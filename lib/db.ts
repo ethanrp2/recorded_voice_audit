@@ -1,56 +1,35 @@
-import Database from "better-sqlite3";
-import fs from "node:fs";
-import path from "node:path";
+import { Redis } from "@upstash/redis";
+import { VOICES } from "./voices";
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const DB_PATH = path.join(DATA_DIR, "votes.db");
+const redis = Redis.fromEnv();
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __recordedVoiceAuditDb: Database.Database | undefined;
+const key = (voiceId: string) => `vote:${voiceId}`;
+
+export async function getAllVotes(): Promise<Record<string, number>> {
+  const ids = VOICES.map((v) => v.id);
+  if (ids.length === 0) return {};
+  const values = await redis.mget<(number | null)[]>(
+    ...ids.map((id) => key(id))
+  );
+  const out: Record<string, number> = {};
+  ids.forEach((id, i) => {
+    out[id] = values[i] ?? 0;
+  });
+  return out;
 }
 
-function openDb(): Database.Database {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  const db = new Database(DB_PATH);
-  db.pragma("journal_mode = WAL");
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS votes (
-      voice_id TEXT PRIMARY KEY,
-      count INTEGER NOT NULL DEFAULT 0
-    );
-  `);
-  return db;
-}
-
-function getDb(): Database.Database {
-  if (!global.__recordedVoiceAuditDb) {
-    global.__recordedVoiceAuditDb = openDb();
+export async function incrementVote(
+  voiceId: string,
+  delta: number = 1
+): Promise<number> {
+  const k = key(voiceId);
+  if (delta >= 0) {
+    return await redis.incr(k);
   }
-  return global.__recordedVoiceAuditDb;
-}
-
-export function getAllVotes(): Record<string, number> {
-  const rows = getDb()
-    .prepare("SELECT voice_id, count FROM votes")
-    .all() as { voice_id: string; count: number }[];
-  return Object.fromEntries(rows.map((r) => [r.voice_id, r.count]));
-}
-
-export function getVote(voiceId: string): number {
-  const row = getDb()
-    .prepare("SELECT count FROM votes WHERE voice_id = ?")
-    .get(voiceId) as { count: number } | undefined;
-  return row?.count ?? 0;
-}
-
-export function incrementVote(voiceId: string, delta: number = 1): number {
-  const d = delta < 0 ? -1 : 1;
-  const stmt = getDb().prepare(`
-    INSERT INTO votes (voice_id, count) VALUES (?, MAX(0, ?))
-    ON CONFLICT(voice_id) DO UPDATE SET count = MAX(0, count + ?)
-    RETURNING count
-  `);
-  const row = stmt.get(voiceId, d, d) as { count: number };
-  return row.count;
+  const next = await redis.decr(k);
+  if (next < 0) {
+    await redis.set(k, 0);
+    return 0;
+  }
+  return next;
 }

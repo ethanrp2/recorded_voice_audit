@@ -8,8 +8,8 @@ import { PEOPLE, VOICES } from "@/lib/voices";
 
 export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const votes = getAllVotes();
+export default async function Home() {
+  const votes = await getAllVotes();
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden bg-[#141311] text-slate-200">

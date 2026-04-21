@@ -19,6 +19,6 @@ export async function POST(request: Request) {
     return Response.json({ error: "Voice not found" }, { status: 404 });
   }
 
-  const count = incrementVote(voiceId, delta);
+  const count = await incrementVote(voiceId, delta);
   return Response.json({ voiceId, count });
 }

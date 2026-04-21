@@ -1,10 +1,12 @@
+"use client";
+
 import { VoiceCard } from "./VoiceCard";
+import { useVotes } from "./VotesContext";
 import type { Voice } from "@/lib/voices";
 
 interface Props {
   person: string;
   voices: Voice[];
-  votes: Record<string, number>;
 }
 
 function pick(
@@ -15,11 +17,9 @@ function pick(
   return voices.find((v) => v.provider === provider && v.variant === variant);
 }
 
-export function PersonRow({ person, voices, votes }: Props) {
-  const maxCount = voices.reduce(
-    (m, v) => Math.max(m, votes[v.id] ?? 0),
-    0
-  );
+export function PersonRow({ person, voices }: Props) {
+  const { votes } = useVotes();
+  const maxCount = voices.reduce((m, v) => Math.max(m, votes[v.id] ?? 0), 0);
   const isHighlighted = (v: Voice | undefined): boolean => {
     if (!v) return false;
     const c = votes[v.id] ?? 0;
@@ -51,7 +51,6 @@ export function PersonRow({ person, voices, votes }: Props) {
             <VoiceCard
               key={v.id}
               voice={v}
-              initialCount={votes[v.id] ?? 0}
               highlighted={isHighlighted(v)}
             />
           ) : (
@@ -68,7 +67,6 @@ export function PersonRow({ person, voices, votes }: Props) {
             <VoiceCard
               key={v.id}
               voice={v}
-              initialCount={votes[v.id] ?? 0}
               highlighted={isHighlighted(v)}
             />
           ) : (

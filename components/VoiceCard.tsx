@@ -1,17 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useAudio } from "@/hooks/useAudio";
 import { usePhrase } from "./PhraseContext";
+import { useVotes } from "./VotesContext";
 import type { Voice } from "@/lib/voices";
 
 interface Props {
   voice: Voice;
-  initialCount: number;
   highlighted: boolean;
 }
-
-const VOTED_STORAGE_KEY = "rva:voted";
 
 const PALETTE: Record<
   Voice["provider"],
@@ -22,6 +19,10 @@ const PALETTE: Record<
     activeHover: string;
     voteHoverText: string;
     voteHoverBorder: string;
+    playingBorder: string;
+    playingBg: string;
+    playingText: string;
+    playingRing: string;
   }
 > = {
   cartesia: {
@@ -31,6 +32,10 @@ const PALETTE: Record<
     activeHover: "hover:bg-[#d88a6e]",
     voteHoverText: "hover:text-[#e7a48a]",
     voteHoverBorder: "hover:border-[#cc785c]/40",
+    playingBorder: "border-[#cc785c]",
+    playingBg: "bg-[#cc785c]/30",
+    playingText: "text-[#f5d9c9]",
+    playingRing: "ring-[#cc785c]/50",
   },
   elevenlabs: {
     ring: "ring-[#6aadc4]/50",
@@ -39,76 +44,21 @@ const PALETTE: Record<
     activeHover: "hover:bg-[#7cbfd4]",
     voteHoverText: "hover:text-[#a3d1de]",
     voteHoverBorder: "hover:border-[#6aadc4]/40",
+    playingBorder: "border-[#6aadc4]",
+    playingBg: "bg-[#6aadc4]/30",
+    playingText: "text-[#c4e3ed]",
+    playingRing: "ring-[#6aadc4]/50",
   },
 };
 
-function loadVoted(): Set<string> {
-  if (typeof window === "undefined") return new Set();
-  try {
-    const raw = window.localStorage.getItem(VOTED_STORAGE_KEY);
-    return new Set(raw ? (JSON.parse(raw) as string[]) : []);
-  } catch {
-    return new Set();
-  }
-}
-
-function saveVoted(set: Set<string>) {
-  try {
-    window.localStorage.setItem(VOTED_STORAGE_KEY, JSON.stringify([...set]));
-  } catch {
-    /* ignore */
-  }
-}
-
-export function VoiceCard({ voice, initialCount, highlighted }: Props) {
-  const [count, setCount] = useState(initialCount);
-  const [voted, setVoted] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const { play, loading, error } = useAudio();
+export function VoiceCard({ voice, highlighted }: Props) {
+  const { play, loadingVoiceId, playingVoiceId, error } = useAudio();
   const { phrase } = usePhrase();
+  const { vote, isVotedByUser } = useVotes();
   const p = PALETTE[voice.provider];
-
-  useEffect(() => {
-    setVoted(loadVoted().has(voice.id));
-  }, [voice.id]);
-
-  useEffect(() => {
-    setCount(initialCount);
-  }, [initialCount]);
-
-  async function handleVote() {
-    if (busy) return;
-    const nextVoted = !voted;
-    const delta = nextVoted ? 1 : -1;
-    setBusy(true);
-    setVoted(nextVoted);
-    setCount((c) => Math.max(0, c + delta));
-
-    const stored = loadVoted();
-    if (nextVoted) stored.add(voice.id);
-    else stored.delete(voice.id);
-    saveVoted(stored);
-
-    try {
-      const resp = await fetch("/api/vote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ voiceId: voice.id, delta }),
-      });
-      if (!resp.ok) throw new Error("vote failed");
-      const data = (await resp.json()) as { count: number };
-      setCount(data.count);
-    } catch {
-      setVoted(!nextVoted);
-      setCount((c) => Math.max(0, c - delta));
-      const rollback = loadVoted();
-      if (nextVoted) rollback.delete(voice.id);
-      else rollback.add(voice.id);
-      saveVoted(rollback);
-    } finally {
-      setBusy(false);
-    }
-  }
+  const voted = isVotedByUser(voice);
+  const isLoading = loadingVoiceId === voice.id;
+  const isPlaying = playingVoiceId === voice.id;
 
   return (
     <div
@@ -119,28 +69,33 @@ export function VoiceCard({ voice, initialCount, highlighted }: Props) {
       <button
         type="button"
         onClick={() => play(voice.id, phrase)}
-        disabled={loading}
+        disabled={isLoading}
         aria-label="Play sample"
         title={error ?? "Play sample"}
-        className={`inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md border border-white/10 bg-white/[0.06] px-3 text-xs font-medium text-slate-100 transition-colors ${p.voteHoverBorder} hover:bg-white/10 disabled:opacity-50`}
+        className={`inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md border px-3 text-xs font-medium transition-colors disabled:opacity-50 ${
+          isPlaying
+            ? `${p.playingBorder} ${p.playingBg} ${p.playingText} ring-2 ring-offset-0 ${p.playingRing}`
+            : `border-white/10 bg-white/[0.06] text-slate-100 ${p.voteHoverBorder} hover:bg-white/10`
+        }`}
       >
-        {loading ? (
+        {isPlaying ? (
+          <PlayingIndicator />
+        ) : isLoading ? (
           <span className="block h-2.5 w-2.5 animate-pulse rounded-full bg-current" />
         ) : (
           <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5">
             <path d="M8 5.14v13.72L19 12 8 5.14Z" />
           </svg>
         )}
-        <span>Play</span>
+        <span>{isPlaying ? "Playing" : "Play"}</span>
       </button>
       <button
         type="button"
-        onClick={handleVote}
-        disabled={busy}
-        aria-label={voted ? "Remove upvote" : "Upvote"}
+        onClick={() => vote(voice)}
+        aria-label={voted ? "Remove your vote" : "Vote for this voice"}
         aria-pressed={voted}
-        title={voted ? "Click to remove your upvote" : "Upvote this voice"}
-        className={`inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md border px-2.5 text-xs font-semibold tabular-nums transition-colors disabled:opacity-60 ${
+        title={voted ? "Click to remove your vote" : "Vote for this voice"}
+        className={`inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md border px-2.5 text-xs font-semibold transition-colors ${
           voted
             ? `border-transparent ${p.activeBg} text-white ${p.activeHover}`
             : `border-white/10 bg-transparent text-slate-300 ${p.voteHoverBorder} hover:bg-white/5 ${p.voteHoverText}`
@@ -150,8 +105,20 @@ export function VoiceCard({ voice, initialCount, highlighted }: Props) {
           <path d="M12 4l8 10H4l8-10Z" />
         </svg>
         <span>{voted ? "Voted" : "Vote"}</span>
-        <span className="opacity-70">· {count}</span>
       </button>
     </div>
+  );
+}
+
+function PlayingIndicator() {
+  return (
+    <span
+      aria-hidden
+      className="inline-flex h-3.5 w-3.5 items-end justify-between gap-[1.5px]"
+    >
+      <span className="block w-[2px] rounded-sm bg-current animate-[eq_900ms_ease-in-out_infinite] [--h:60%]" />
+      <span className="block w-[2px] rounded-sm bg-current animate-[eq_700ms_ease-in-out_infinite_-200ms] [--h:90%]" />
+      <span className="block w-[2px] rounded-sm bg-current animate-[eq_800ms_ease-in-out_infinite_-400ms] [--h:45%]" />
+    </span>
   );
 }

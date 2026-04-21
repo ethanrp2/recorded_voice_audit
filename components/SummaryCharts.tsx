@@ -11,18 +11,17 @@ import {
   YAxis,
 } from "recharts";
 import type { Voice } from "@/lib/voices";
-
-interface Props {
-  voices: Voice[];
-  votes: Record<string, number>;
-}
+import { VOICES } from "@/lib/voices";
+import { useVotes } from "./VotesContext";
 
 const CARTESIA_COLOR = "#cc785c";
 const ELEVENLABS_COLOR = "#6aadc4";
 const REGULAR_COLOR = "#cc785c";
 const CX_COLOR = "#6aadc4";
 
-export function SummaryCharts({ voices, votes }: Props) {
+export function SummaryCharts() {
+  const { votes } = useVotes();
+  const voices = VOICES;
   const providerTotals: Record<Voice["provider"], number> = {
     cartesia: 0,
     elevenlabs: 0,

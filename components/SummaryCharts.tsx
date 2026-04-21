@@ -17,10 +17,10 @@ interface Props {
   votes: Record<string, number>;
 }
 
-const CARTESIA_COLOR = "#22d3ee";
-const ELEVENLABS_COLOR = "#a78bfa";
-const REGULAR_COLOR = "#f472b6";
-const CX_COLOR = "#facc15";
+const CARTESIA_COLOR = "#cc785c";
+const ELEVENLABS_COLOR = "#6aadc4";
+const REGULAR_COLOR = "#cc785c";
+const CX_COLOR = "#6aadc4";
 
 export function SummaryCharts({ voices, votes }: Props) {
   const providerTotals: Record<Voice["provider"], number> = {

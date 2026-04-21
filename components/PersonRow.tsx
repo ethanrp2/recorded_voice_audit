@@ -16,58 +16,61 @@ function pick(
 }
 
 export function PersonRow({ person, voices, votes }: Props) {
-  const cells: {
-    provider: Voice["provider"];
-    variant: Voice["variant"];
-  }[] = [
-    { provider: "cartesia", variant: "regular" },
-    { provider: "elevenlabs", variant: "regular" },
-    { provider: "cartesia", variant: "cx" },
-    { provider: "elevenlabs", variant: "cx" },
-  ];
+  const maxCount = voices.reduce(
+    (m, v) => Math.max(m, votes[v.id] ?? 0),
+    0
+  );
+  const isHighlighted = (v: Voice | undefined): boolean => {
+    if (!v) return false;
+    const c = votes[v.id] ?? 0;
+    if (maxCount === 0) return true;
+    return c === maxCount;
+  };
 
   return (
-    <section className="rounded-xl border border-white/10 bg-white/[0.02] p-3 backdrop-blur-sm">
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-mono text-sm font-semibold uppercase tracking-[0.2em] text-slate-100">
-          {person}
-        </h2>
-        <div className="font-mono text-[10px] uppercase tracking-widest text-slate-500">
-          4 voices
-        </div>
-      </div>
+    <section className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-3">
+      <h2 className="mb-2 font-mono text-sm font-semibold uppercase tracking-[0.2em] text-[#e7dfd3]">
+        {person}
+      </h2>
 
-      <div className="grid grid-cols-[auto_1fr_1fr] gap-1.5 items-center">
-        {/* column headers */}
+      <div className="grid grid-cols-[auto_1fr_1fr] gap-x-2 gap-y-1 items-center">
         <div />
-        <div className="text-center font-mono text-[10px] uppercase tracking-widest text-cyan-400/80">
+        <div className="text-center font-mono text-[10px] font-semibold uppercase tracking-widest text-[#cc785c]/85">
           Cartesia
         </div>
-        <div className="text-center font-mono text-[10px] uppercase tracking-widest text-violet-400/80">
+        <div className="text-center font-mono text-[10px] font-semibold uppercase tracking-widest text-[#6aadc4]/85">
           ElevenLabs
         </div>
 
-        {/* regular row */}
-        <div className="font-mono text-[10px] uppercase tracking-widest text-slate-500 pr-2">
+        <div className="pr-2 font-mono text-[10px] uppercase tracking-widest text-slate-500">
           Regular
         </div>
         {(["cartesia", "elevenlabs"] as const).map((provider) => {
           const v = pick(voices, provider, "regular");
           return v ? (
-            <VoiceCard key={v.id} voice={v} initialCount={votes[v.id] ?? 0} />
+            <VoiceCard
+              key={v.id}
+              voice={v}
+              initialCount={votes[v.id] ?? 0}
+              highlighted={isHighlighted(v)}
+            />
           ) : (
             <div key={`${provider}-regular-missing`} />
           );
         })}
 
-        {/* cx row */}
-        <div className="font-mono text-[10px] uppercase tracking-widest text-slate-500 pr-2">
+        <div className="pr-2 font-mono text-[10px] uppercase tracking-widest text-slate-500">
           CX
         </div>
         {(["cartesia", "elevenlabs"] as const).map((provider) => {
           const v = pick(voices, provider, "cx");
           return v ? (
-            <VoiceCard key={v.id} voice={v} initialCount={votes[v.id] ?? 0} />
+            <VoiceCard
+              key={v.id}
+              voice={v}
+              initialCount={votes[v.id] ?? 0}
+              highlighted={isHighlighted(v)}
+            />
           ) : (
             <div key={`${provider}-cx-missing`} />
           );

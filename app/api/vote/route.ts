@@ -6,9 +6,12 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     voiceId?: string;
+    delta?: number;
   } | null;
 
   const voiceId = body?.voiceId;
+  const delta = body?.delta === -1 ? -1 : 1;
+
   if (!voiceId) {
     return Response.json({ error: "Missing voiceId" }, { status: 400 });
   }
@@ -16,6 +19,6 @@ export async function POST(request: Request) {
     return Response.json({ error: "Voice not found" }, { status: 404 });
   }
 
-  const count = incrementVote(voiceId);
+  const count = incrementVote(voiceId, delta);
   return Response.json({ voiceId, count });
 }

@@ -44,12 +44,13 @@ export function getVote(voiceId: string): number {
   return row?.count ?? 0;
 }
 
-export function incrementVote(voiceId: string): number {
+export function incrementVote(voiceId: string, delta: number = 1): number {
+  const d = delta < 0 ? -1 : 1;
   const stmt = getDb().prepare(`
-    INSERT INTO votes (voice_id, count) VALUES (?, 1)
-    ON CONFLICT(voice_id) DO UPDATE SET count = count + 1
+    INSERT INTO votes (voice_id, count) VALUES (?, MAX(0, ?))
+    ON CONFLICT(voice_id) DO UPDATE SET count = MAX(0, count + ?)
     RETURNING count
   `);
-  const row = stmt.get(voiceId) as { count: number };
+  const row = stmt.get(voiceId, d, d) as { count: number };
   return row.count;
 }

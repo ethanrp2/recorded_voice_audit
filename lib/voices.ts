@@ -10,6 +10,10 @@ export interface Voice {
 }
 
 const NAMES = [
+  "mandi",
+  "mandi_cx",
+  "jordan",
+  "jordan_cx",
   "ryan",
   "ryan_cx",
   "lucas",
@@ -33,6 +37,10 @@ const NAMES = [
 ] as const;
 
 const CARTESIA_IDS = [
+  "baa05162-4492-455e-8258-c7562ab46a1f",
+  "30f5bfe1-db64-4c9a-83d2-6e72aa3a3c84",
+  "5b00ef47-6e48-49b3-ab6b-7ea55ffcb7ce",
+  "43e12bc4-2495-4605-90cd-8348e07a2f3c",
   "867c8c79-91a9-4170-a3fe-58a62909be78",
   "31a5cfa8-3300-465e-aeb4-9ecafdec4bde",
   "9d7845e1-6e4f-4ef8-9615-41ac2b55f5f7",
@@ -56,6 +64,10 @@ const CARTESIA_IDS = [
 ] as const;
 
 const ELEVENLABS_IDS = [
+  "QPzE4mhWdjtILnYSFWfR",
+  "sFacRowovPlDU9CDDej7",
+  "NaFoIHM0mngMOebLkkxk",
+  "NoaWcPwWLhCDoVaVpx5m",
   "1qPU1RAxurnKH7PMBP83",
   "mxzil2hVujhXoutx6opb",
   "UNuIhtFZzT52ibPiTzJ0",
